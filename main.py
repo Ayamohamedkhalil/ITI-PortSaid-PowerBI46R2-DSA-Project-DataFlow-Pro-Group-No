@@ -1,7 +1,7 @@
 """
 main.py  DataFlow Pro CLI
 ===========================
-NileMart ETL Engine Interactive Menu
+NileMart ETL Engine  Interactive Menu
 """
 
 import sys
@@ -15,6 +15,7 @@ from phase1_indexer import (
 )
 from phase2_tracker import AppliedStepsTracker
 from phase3_parser  import DAXEvaluator
+from phase4_buffer  import LiveIngestionQueue
 
 BANNER = r"""
   ____        _        _____ _               ____
@@ -29,13 +30,12 @@ BANNER = r"""
 
 tracker    = AppliedStepsTracker()
 dax_engine = DAXEvaluator()
+buffer     = LiveIngestionQueue()
 
 
 def menu_phase1():
     print("\n  Phase 1  Query Optimizer (Sorting & Searching)")
-    print("  a) Run full benchmark")
-    print("  b) Sort 1,000 transactions and show top 5")
-    print("  c) Slice Q3 2024 using bisect")
+    print("  a) Run full benchmark  b) Sort 1k records  c) Q3 bisect slice")
     print("  0) Back")
     choice = input("\n  Select: ").strip().lower()
     if choice == "a":
@@ -71,38 +71,62 @@ def menu_phase2():
 
 def menu_phase3():
     print("\n  Phase 3  DAX Formula Parser (Stacks)")
-    print("  a) Evaluate Postfix expression")
-    print("  b) Evaluate Infix expression")
-    print("  c) Validate parentheses")
-    print("  d) Run full demo")
+    print("  a) Postfix eval  b) Infix eval  c) Validate parens  d) Full demo")
     print("  0) Back")
     choice = input("\n  Select: ").strip().lower()
     if choice == "a":
-        print("  Example: 15000 5000 + 2 *")
-        expr = input("  Postfix expression: ").strip()
+        expr = input("  Postfix (e.g. 15000 5000 + 2 *): ").strip()
         if expr:
-            try:
-                print(f"  Result: {dax_engine.evaluate_postfix(expr):,.4f}")
-            except Exception as e:
-                print(f"  Error: {e}")
+            try: print(f"  Result: {dax_engine.evaluate_postfix(expr):,.4f}")
+            except Exception as e: print(f"  Error: {e}")
     elif choice == "b":
-        print("  Example: ( 15000 + 5000 ) * 2")
-        expr = input("  Infix expression: ").strip()
+        expr = input("  Infix (e.g. ( 15000 + 5000 ) * 2): ").strip()
         if expr:
             try:
                 postfix = dax_engine.infix_to_postfix(expr)
-                result  = dax_engine.evaluate_postfix(postfix)
                 print(f"  Postfix: {postfix}")
-                print(f"  Result : {result:,.4f}")
-            except Exception as e:
-                print(f"  Error: {e}")
+                print(f"  Result : {dax_engine.evaluate_postfix(postfix):,.4f}")
+            except Exception as e: print(f"  Error: {e}")
     elif choice == "c":
-        expr = input("  Formula to validate: ").strip()
+        expr = input("  Formula: ").strip()
         if expr:
             ok, msg = dax_engine.validate_parentheses(expr)
             print(f"  {'✅' if ok else '❌'} {msg}")
     elif choice == "d":
         from phase3_parser import run_demo
+        run_demo()
+
+
+def menu_phase4():
+    print("\n  Phase 4  Live Data Buffer (Queues)")
+    print("  a) Enqueue random transaction")
+    print("  b) Process batch of 3")
+    print("  c) Show buffer status")
+    print("  d) Run performance benchmark")
+    print("  e) Run full demo")
+    print("  0) Back")
+    choice = input("\n  Select: ").strip().lower()
+    if choice == "a":
+        import random
+        txn = {
+            "txn":     random.randint(3000, 9999),
+            "branch":  random.choice(["Maadi","Zayed","Smouha","Mansoura"]),
+            "amt_egp": random.randint(100, 12000),
+        }
+        buffer.enqueue_row(txn)
+    elif choice == "b":
+        batch = buffer.process_batch(3)
+        if batch:
+            print(f"  Batch revenue: {sum(r['amt_egp'] for r in batch):,} EGP")
+        else:
+            print("  Buffer is empty.")
+    elif choice == "c":
+        print(f"  Buffer size: {len(buffer)} rows | Empty: {buffer.is_empty()}")
+    elif choice == "d":
+        from phase4_buffer import _benchmark_queues
+        _benchmark_queues(5000)
+    elif choice == "e":
+        from phase4_buffer import run_demo
         run_demo()
 
 
@@ -114,6 +138,7 @@ def main():
         print("  1. Phase 1 Query Optimizer       (Sorting & Searching)")
         print("  2. Phase 2  Applied Steps Tracker (Linked Lists)")
         print("  3. Phase 3  DAX Formula Parser    (Stacks)")
+        print("  4. Phase 4  Live Data Buffer      (Queues)")
         print("  0. Exit")
 
         choice = input("\n  Select: ").strip()
@@ -121,6 +146,7 @@ def main():
         if   choice == "1": menu_phase1()
         elif choice == "2": menu_phase2()
         elif choice == "3": menu_phase3()
+        elif choice == "4": menu_phase4()
         elif choice == "0":
             print("\n  Shutting down DataFlow Pro. Masalama!\n")
             sys.exit(0)
