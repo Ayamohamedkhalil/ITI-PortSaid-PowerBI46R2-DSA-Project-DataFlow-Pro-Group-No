@@ -1,0 +1,201 @@
+
+==========================================================
+  PHASE 1 – QUERY OPTIMIZER BENCHMARK
+==========================================================
+
+[1/3] Generating 10,000 transaction records...
+      Sample record: {'txn_id': 605104, 'branch': 'Zamalek', 'amount': 4983.3, 'date_key': 20240868}
+
+[2/3] Sorting Benchmark (sample of 1,000 records)
+----------------------------------------------------------
+  Bubble Sort    O(n²)           → 0.063714s  (n=1000)
+  Insertion Sort O(n²)           → 0.018842s  (n=1000)
+  Selection Sort O(n²)           → 0.024587s  (n=1000)
+  Merge Sort     O(n log n)      → 0.001470s  (n=1000)
+  Quick Sort     O(n log n)      → 0.000955s  (n=1000)
+  Timsort (built-in)            → 0.000181s  (n=1000)
+
+[3/3] Search Benchmark on full 10,000 records
+----------------------------------------------------------
+  Searching for fraudulent TXN ID: 439408
+  Linear Search (unsorted) → 0.000034s | Found: True
+  Binary Search (sorted)   → 0.000010s | Found: True
+   Binary Search is ~4x faster than Linear Search
+
+  bisect Q3 Slice (Jul–Sep 2024) → 2,068 transactions extracted instantly
+
+Phase 1 complete.
+
+
+==========================================================
+  PHASE 2 – APPLIED STEPS TRACKER DEMO
+==========================================================
+
+-- Adding ETL transformation steps --
+  [Tracker]  Added step: 'Source – Connected to NileMart SQL Server'
+  [Tracker]  Added step: 'Removed Null Rows'
+  [Tracker]  Added step: 'Changed Type – amount_egp to Decimal'
+  [Tracker]  Added step: 'Filtered Rows – branch != 'Test''
+  [Tracker]  Added step: 'Added Column – profit_margin'
+  [Tracker]  Added step: 'Renamed Column – amt → amount_egp'
+
+  [Applied Steps – Power Query History]
+    1. [Source – Connected to NileMart SQL Server] →     2. [Removed Null Rows] →     3. [Changed Type – amount_egp to Decimal] →     4. [Filtered Rows – branch != 'Test'] →     5. [Added Column – profit_margin] →     6. [Renamed Column – amt → amount_egp] ◀ CURRENT
+
+-- Undo 3 times --
+  [Tracker]   Undone. Now at: 'Added Column – profit_margin'
+  [Tracker]   Undone. Now at: 'Filtered Rows – branch != 'Test''
+  [Tracker]   Undone. Now at: 'Changed Type – amount_egp to Decimal'
+
+  [Applied Steps – Power Query History]
+    1. [Source – Connected to NileMart SQL Server] →     2. [Removed Null Rows] →     3. [Changed Type – amount_egp to Decimal] ◀ CURRENT →     4. [Filtered Rows – branch != 'Test'] →     5. [Added Column – profit_margin] →     6. [Renamed Column – amt → amount_egp]
+
+-- Redo 1 time --
+  [Tracker]  Redone. Now at: 'Filtered Rows – branch != 'Test''
+
+  [Applied Steps – Power Query History]
+    1. [Source – Connected to NileMart SQL Server] →     2. [Removed Null Rows] →     3. [Changed Type – amount_egp to Decimal] →     4. [Filtered Rows – branch != 'Test'] ◀ CURRENT →     5. [Added Column – profit_margin] →     6. [Renamed Column – amt → amount_egp]
+
+-- Add a new step (discards the 2 ahead) --
+  [Tracker]  Added step: 'Merged Queries – joined with inventory table'
+
+  [Applied Steps – Power Query History]
+    1. [Source – Connected to NileMart SQL Server] →     2. [Removed Null Rows] →     3. [Changed Type – amount_egp to Decimal] →     4. [Filtered Rows – branch != 'Test'] →     5. [Merged Queries – joined with inventory table] ◀ CURRENT
+
+ Phase 2 complete.
+
+
+==========================================================
+  PHASE 3 – DAX FORMULA PARSER DEMO
+==========================================================
+
+[Postfix / RPN Evaluation]
+  (15000 + 5000) * 2   = Gross KPI
+  Expression: '15000 5000 + 2 *'                       → Result: 40,000.00 EGP
+
+  120000 * 0.14         = 14% VAT
+  Expression: '120000 0.14 *'                          → Result: 16,800.00 EGP
+
+  (Revenue - Cost) / 5  = Avg Unit Margin
+  Expression: '500000 120000 - 5 /'                    → Result: 76,000.00 EGP
+
+[Infix Evaluation via Shunting-Yard]
+  Infix:   ( 15000 + 5000 ) * 2
+  Postfix: 15000 5000 + 2 *
+  Result:  40,000.00 EGP
+
+  Infix:   500000 - 120000 * 0.14
+  Postfix: 500000 120000 0.14 * -
+  Result:  483,200.00 EGP
+
+  Infix:   ( 80000 + 40000 ) / ( 2 + 2 )
+  Postfix: 80000 40000 + 2 2 + /
+  Result:  30,000.00 EGP
+
+[Parenthesis Validator]
+  ✅ '(Revenue - Cost) * Tax'
+  ❌ '((Revenue - Cost) * Tax'
+     ↳ Unclosed brackets: '(' at pos 0
+  ❌ '(Revenue - Cost) * Tax)'
+     ↳ Unexpected ')' at position 22 – no matching opener
+  ✅ '{[Revenue - Cost] * (Tax + Bonus)}'
+
+✅ Phase 3 complete.
+
+
+==========================================================
+  PHASE 4 – LIVE DATA BUFFER DEMO
+==========================================================
+
+-- Simulating White Friday POS stream from 6 branches --
+  [Buffer]  Enqueued  TXN #2001 from Maadi | Amount: 850 EGP
+  [Buffer]  Enqueued  TXN #2002 from Smouha | Amount: 3,200 EGP
+  [Buffer]  Enqueued  TXN #2003 from Zayed | Amount: 1,450 EGP
+  [Buffer]  Enqueued  TXN #2004 from Mansoura | Amount: 670 EGP
+  [Buffer]  Enqueued  TXN #2005 from Zamalek | Amount: 9,800 EGP
+  [Buffer]  Enqueued  TXN #2006 from Heliopolis | Amount: 2,150 EGP
+
+  [Buffer]  Current buffer size: 6 rows
+  [Buffer]  Next in line: TXN #2001
+
+-- Processing in batches of 3 --
+  [Buffer]  Processed 3 transactions → pushing to NileMart Power BI Datasets...
+  Batch 1 total: 5,500 EGP
+  [Buffer]  Processed 3 transactions → pushing to NileMart Power BI Datasets...
+  Batch 2 total: 12,620 EGP
+
+  [Buffer]  Buffer empty: True
+
+  [Benchmark] 5,000 enqueue + 5,000 dequeue operations
+  --------------------------------------------------
+  ListQueue  (O(n) dequeue) : 0.0016s
+  LinkedQueue (O(1) both)   : 0.0022s
+  deque (C-optimised O(1))  : 0.0002s  
+
+   deque is ~6.9x faster than the naive ListQueue
+
+Phase 4 complete.
+
+
+==========================================================
+  PHASE 5 – HIERARCHICAL MATRIX BUILDER DEMO
+==========================================================
+
+[Part 1] Customer Dimension Index (Binary Search Tree)
+  --------------------------------------------------
+  Inserting customers into BST...
+     Inserted: 29350187 → Ahmed Samir
+     Inserted: 30801245 → Mona Hassan
+     Inserted: 27654932 → Khaled Adel
+     Inserted: 31200789 → Nadia Fawzy
+     Inserted: 28900654 → Omar Tarek
+     Inserted: 32010011 → Layla Mostafa
+     Inserted: 26780123 → Samy Essam
+
+  BST Height: 4 levels
+
+  In-Order Traversal (sorted by National ID):
+    26780123 | Samy Essam
+    27654932 | Khaled Adel
+    28900654 | Omar Tarek
+    29350187 | Ahmed Samir
+    30801245 | Mona Hassan
+    31200789 | Nadia Fawzy
+    32010011 | Layla Mostafa
+
+  Searching for National ID 30801245...
+   Found: 30801245 → Mona Hassan
+
+  Searching for National ID 99999999 (not in table)...
+   Not found – no match in dimension table
+
+
+[Part 2] Organizational Chart & Revenue Roll-Up
+  --------------------------------------------------
+
+  [Org Chart] NileMart Corporate Hierarchy
+  ──────────────────────────────────────────────────────
+Omar  (Global CEO)  (Direct Sales: 0 EGP)
+├── Tarek (VP Cairo & Giza)  (Direct Sales: 0 EGP)
+│   ├── Hany  (Store Mgr – Maadi)  (Direct Sales: 30,000 EGP)
+│   │   ├── Aya     (Maadi Rep 1)  (Direct Sales: 150,000 EGP)
+│   │   └── Fady    (Maadi Rep 2)  (Direct Sales: 95,000 EGP)
+│   └── Dina  (Store Mgr – Zayed)  (Direct Sales: 25,000 EGP)
+│       ├── Mahmoud (Zayed Rep 1)  (Direct Sales: 270,000 EGP)
+│       └── Sara    (Zayed Rep 2)  (Direct Sales: 110,000 EGP)
+└── Salma (VP Alex & Delta)  (Direct Sales: 0 EGP)
+    ├── Ramy  (Store Mgr – Smouha)  (Direct Sales: 20,000 EGP)
+    │   └── Kareem  (Smouha Rep 1)  (Direct Sales: 180,000 EGP)
+    └── Lara  (Store Mgr – Mansoura)  (Direct Sales: 15,000 EGP)
+        ├── Nour    (Mansoura Rep 1)  (Direct Sales: 120,000 EGP)
+        └── Yusuf   (Mansoura Rep 2)  (Direct Sales: 85,000 EGP)
+
+  [Roll-Up Sales Aggregation]
+   Tarek (VP Cairo & Giza)        → Total Revenue:      680,000 EGP
+   Salma (VP Alex & Delta)        → Total Revenue:      420,000 EGP
+   Omar  (Global CEO)             → Total Revenue:    1,100,000 EGP
+
+ Phase 5 complete.
+
+
+ All phases demonstrated successfully!
